@@ -4,10 +4,9 @@
 #
 # Optimized base image for Laravel Octane applications with:
 # - PHP 8.4 CLI (Alpine Linux)
-# - OpenSwoole 22.1.2 - High-performance async runtime
+# - OpenSwoole 25.2.0 - High-performance async runtime
 # - Supervisord - Process control system
 # - PostgreSQL support - Optimized for DO managed databases
-# - Node.js 20 - Frontend asset building
 #
 # Usage:
 #   FROM ghcr.io/mente-io/do-laravel-runtime:latest
@@ -17,8 +16,7 @@
 FROM php:8.4-cli-alpine
 
 # Build arguments
-ARG SWOOLE_VERSION=22.1.2
-ARG NODE_VERSION=20
+ARG SWOOLE_VERSION=25.2.0
 
 # Labels
 LABEL description="Production-ready PHP 8.4 + OpenSwoole runtime for Laravel Octane on DigitalOcean Apps"
@@ -33,6 +31,7 @@ RUN apk add --no-cache \
     gcc \
     libc-dev \
     pkgconfig \
+    linux-headers \
     # PHP extensions dependencies
     libpng-dev \
     libjpeg-turbo-dev \
@@ -52,10 +51,7 @@ RUN apk add --no-cache \
     bash \
     ca-certificates \
     # PostgreSQL client
-    postgresql-client \
-    # Node.js
-    nodejs \
-    npm
+    postgresql-client
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -100,11 +96,6 @@ RUN echo "opcache.enable=1" > /usr/local/etc/php/conf.d/opcache.ini \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install global Node.js packages
-RUN npm install -g \
-    chokidar \
-    pnpm
-
 # Create application directory
 WORKDIR /var/www
 
@@ -112,7 +103,7 @@ WORKDIR /var/www
 RUN mkdir -p /etc/supervisor/conf.d
 
 # Cleanup
-RUN apk del autoconf g++ make gcc libc-dev pkgconfig \
+RUN apk del autoconf g++ make gcc libc-dev pkgconfig linux-headers \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
