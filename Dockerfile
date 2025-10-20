@@ -13,18 +13,16 @@
 #
 # ════════════════════════════════════════════════════════════════
 
-FROM php:8.4-cli-alpine
+# ============================================================================
+# Build Stage - Compile PHP extensions and OpenSwoole
+# ============================================================================
+FROM php:8.4-cli-alpine AS builder
 
 # Build arguments
 ARG SWOOLE_VERSION=25.2.0
 
-# Labels
-LABEL description="Production-ready PHP 8.4 + OpenSwoole runtime for Laravel Octane on DigitalOcean Apps"
-LABEL org.opencontainers.image.source="https://github.com/mente-io/do-laravel-runtime"
-
-# Install system dependencies
+# Install build dependencies
 RUN apk add --no-cache \
-    # Build dependencies
     autoconf \
     g++ \
     make \
@@ -32,7 +30,6 @@ RUN apk add --no-cache \
     libc-dev \
     pkgconfig \
     linux-headers \
-    # PHP extensions dependencies
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -41,17 +38,7 @@ RUN apk add --no-cache \
     icu-dev \
     oniguruma-dev \
     libxml2-dev \
-    curl-dev \
-    # Runtime dependencies
-    supervisor \
-    git \
-    unzip \
-    curl \
-    wget \
-    bash \
-    ca-certificates \
-    # PostgreSQL client
-    postgresql-client
+    curl-dev
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -71,7 +58,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         bcmath \
         sockets
 
-# Install Swoole (OpenSwoole)
+# Install OpenSwoole
 RUN pecl install openswoole-${SWOOLE_VERSION} \
     && docker-php-ext-enable openswoole
 
@@ -79,7 +66,52 @@ RUN pecl install openswoole-${SWOOLE_VERSION} \
 RUN pecl install redis \
     && docker-php-ext-enable redis
 
-# Configure PHP
+# ============================================================================
+# Final Stage - Minimal runtime image
+# ============================================================================
+FROM php:8.4-cli-alpine
+
+# Labels
+LABEL description="Production-ready PHP 8.4 + OpenSwoole runtime for Laravel Octane on DigitalOcean Apps"
+LABEL org.opencontainers.image.source="https://github.com/mente-io/do-laravel-runtime"
+
+# Install only runtime dependencies
+RUN apk add --no-cache \
+    # Image libraries
+    libpng \
+    libjpeg-turbo \
+    freetype \
+    # Archive support
+    libzip \
+    # Database support
+    postgresql-client \
+    postgresql-libs \
+    # Internationalization
+    icu-libs \
+    # String processing
+    oniguruma \
+    # XML processing
+    libxml2 \
+    # Network
+    curl \
+    # Process management
+    supervisor \
+    # Version control
+    git \
+    # Utilities
+    unzip \
+    wget \
+    bash \
+    ca-certificates
+
+# Copy PHP extensions from builder
+COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+
+# Copy Composer from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Configure PHP for production
 RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory-limit.ini \
     && echo "upload_max_filesize=50M" > /usr/local/etc/php/conf.d/upload-limit.ini \
     && echo "post_max_size=50M" >> /usr/local/etc/php/conf.d/upload-limit.ini \
@@ -93,22 +125,14 @@ RUN echo "opcache.enable=1" > /usr/local/etc/php/conf.d/opcache.ini \
     && echo "opcache.revalidate_freq=0" >> /usr/local/etc/php/conf.d/opcache.ini \
     && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
 # Create application directory
 WORKDIR /var/www
 
 # Create supervisor configuration directory
 RUN mkdir -p /etc/supervisor/conf.d
 
-# Cleanup
-RUN apk del autoconf g++ make gcc libc-dev pkgconfig linux-headers \
-    && rm -rf /var/cache/apk/* \
-    && rm -rf /tmp/*
-
 # Expose common ports
 EXPOSE 8000 5173
 
-# Default command (can be overridden)
+# Default command
 CMD ["/bin/sh"]
