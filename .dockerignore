@@ -1,0 +1,26 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# CI/CD
+.github
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
