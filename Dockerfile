@@ -34,6 +34,9 @@ ARG CLOUDFLARED_VERSION
 
 FROM php:${PHP_VERSION} AS builder
 
+# Re-declare build arguments for this stage
+ARG SWOOLE_VERSION
+
 # Install build dependencies
 RUN apk add --no-cache \
     autoconf \
