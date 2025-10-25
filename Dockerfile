@@ -80,6 +80,13 @@ RUN pecl install redis \
     && docker-php-ext-enable redis
 
 # ============================================================================
+# Composer Stage - Extract composer binary
+# ============================================================================
+
+ARG COMPOSER_VERSION
+FROM composer:${COMPOSER_VERSION} AS composer
+
+# ============================================================================
 # Final Stage - Minimal runtime image
 # ============================================================================
 
@@ -132,8 +139,8 @@ RUN apk add --no-cache \
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
-# Copy Composer from official image
-COPY --from=composer:${COMPOSER_VERSION} /usr/bin/composer /usr/bin/composer
+# Copy Composer from composer stage
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 # Install cloudflared (optional - only if version is specified)
 RUN if [ -n "$CLOUDFLARED_VERSION" ]; then \
