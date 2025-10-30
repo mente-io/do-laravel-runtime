@@ -1,0 +1,116 @@
+# ════════════════════════════════════════════════════════════════
+# PHP Configuration Values - DigitalOcean Laravel Runtime
+# ════════════════════════════════════════════════════════════════
+#
+# This file controls PHP runtime settings and optional extensions.
+# Modify these values to customize memory, performance, and features.
+#
+
+# ============================================================================
+# Memory Configuration (Optimized for Swoole workers)
+# ============================================================================
+
+# PHP Memory Limit per worker
+# Default: 256M (sufficient for most Laravel APIs)
+# Increase if you process large datasets or images
+PHP_MEMORY_LIMIT=256M
+
+# Upload/POST size limits
+# Default: 5M (API-focused, small payloads)
+# Increase if you accept file uploads
+PHP_UPLOAD_MAX_FILESIZE=5M
+PHP_POST_MAX_SIZE=5M
+
+# Execution time limits (seconds)
+PHP_MAX_EXECUTION_TIME=60
+PHP_MAX_INPUT_TIME=60
+
+# ============================================================================
+# OPcache Configuration (Shared memory - not per worker!)
+# ============================================================================
+
+# OPcache memory consumption (MB)
+# Default: 96M (sufficient for Laravel + dependencies)
+# Increase only if opcache reports cache_full=true
+OPCACHE_MEMORY_CONSUMPTION=96
+
+# Interned strings buffer (MB) - for repeated strings
+# Default: 12M (good for Laravel)
+OPCACHE_INTERNED_STRINGS_BUFFER=12
+
+# Maximum number of files to cache
+# Default: 16229 (prime number - optimal for hash table)
+OPCACHE_MAX_ACCELERATED_FILES=16229
+
+# ============================================================================
+# JIT Compiler Configuration (PHP 8+)
+# ============================================================================
+
+# JIT buffer size (MB) - shared memory
+# Default: 48M (15-30% performance boost)
+# Set to 0 to disable JIT
+JIT_BUFFER_SIZE=48
+
+# JIT mode
+# 1255 = Tracing mode (best for web applications)
+# 1205 = Function mode (better for CLI scripts)
+# 0 = Disabled
+# See: https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit
+JIT_MODE=1255
+
+# ============================================================================
+# Realpath Cache (Critical for performance!)
+# ============================================================================
+
+# Realpath cache size (KB)
+# Default: 4096K (4MB - reduces stat() calls by ~70%)
+REALPATH_CACHE_SIZE=4096K
+
+# Realpath cache TTL (seconds)
+# Default: 600 (10 minutes)
+REALPATH_CACHE_TTL=600
+
+# ============================================================================
+# Optional PHP Extensions (Build-time)
+# ============================================================================
+#
+# Space-separated list of additional extensions to build.
+# Remove extensions you don't need to reduce image size.
+#
+# Available extensions:
+#   gd      - Image processing (thumbnails, watermarks, etc.)
+#   xml     - XML document parsing/generation
+#   bcmath  - Arbitrary precision math (financial calculations)
+#   redis   - Redis cache/session support (recommended for Laravel)
+#
+# Default: gd xml bcmath redis (same as previous versions)
+#
+BUILD_EXTRA_EXTENSIONS="gd xml bcmath"
+
+# ============================================================================
+# Production vs Development
+# ============================================================================
+
+# Display errors (DISABLE in production!)
+PHP_DISPLAY_ERRORS=Off
+
+# Error reporting level
+# Production: E_ALL & ~E_DEPRECATED & ~E_STRICT
+# Development: E_ALL
+PHP_ERROR_REPORTING="E_ALL & ~E_DEPRECATED & ~E_STRICT"
+
+# Expose PHP version in headers (security risk!)
+PHP_EXPOSE_PHP=Off
+
+# ============================================================================
+# Advanced Performance Tuning
+# ============================================================================
+
+# Output buffering (bytes)
+# Default: 4096 (4KB - faster response streaming)
+PHP_OUTPUT_BUFFERING=4096
+
+# Zend exception optimization
+# Saves memory by not storing exception arguments
+ZEND_EXCEPTION_IGNORE_ARGS=On
+ZEND_EXCEPTION_STRING_PARAM_MAX_LEN=0

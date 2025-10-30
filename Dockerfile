@@ -56,31 +56,13 @@ RUN apk add --no-cache \
     libxml2-dev \
     curl-dev
 
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        gd \
-        pdo \
-        pdo_mysql \
-        pdo_pgsql \
-        pgsql \
-        zip \
-        intl \
-        mbstring \
-        xml \
-        curl \
-        opcache \
-        pcntl \
-        bcmath \
-        sockets
+# Copy configuration and installation scripts
+COPY values-php /tmp/values-php
+COPY scripts/install-php-extensions.sh /tmp/install-php-extensions.sh
 
-# Install OpenSwoole
-RUN pecl install openswoole-${SWOOLE_VERSION} \
-    && docker-php-ext-enable openswoole
-
-# Install Redis extension
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+# Install PHP extensions using script
+RUN chmod +x /tmp/install-php-extensions.sh && \
+    /tmp/install-php-extensions.sh
 
 # ============================================================================
 # Composer Stage - Extract composer binary
@@ -109,34 +91,33 @@ LABEL swoole.version="${SWOOLE_VERSION}"
 LABEL composer.version="${COMPOSER_VERSION}"
 LABEL cloudflared.version="${CLOUDFLARED_VERSION}"
 
-# Install only runtime dependencies
+# Install only runtime dependencies (ultra-minimal set for production)
 RUN apk add --no-cache \
-    # Image libraries
+    # Image libraries (only if you use image processing) \
     libpng \
     libjpeg-turbo \
     freetype \
-    # Archive support
+    # Archive support \
     libzip \
-    # Database support
+    # Database support \
     postgresql-client \
     postgresql-libs \
-    # Internationalization
+    # Internationalization \
     icu-libs \
-    # String processing
+    # String processing \
     oniguruma \
-    # XML processing
+    # XML processing \
     libxml2 \
-    # Network
+    # Network \
     curl \
-    # Process management
-    supervisor \
-    # Version control
-    git \
-    # Utilities
-    unzip \
-    wget \
-    bash \
-    ca-certificates
+    # Process management - using edge repo for latest version (4.3.0+) without pkg_resources warnings \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main supervisor \
+    # Utilities (absolute minimum) \
+    ca-certificates \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/* \
+    && rm -rf /usr/local/lib/php/doc \
+    && rm -rf /usr/local/lib/php/test
 
 # Copy PHP extensions from builder
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
@@ -151,19 +132,12 @@ RUN if [ -n "$CLOUDFLARED_VERSION" ]; then \
         chmod +x /usr/local/bin/cloudflared; \
     fi
 
-# Configure PHP for production
-RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory-limit.ini \
-    && echo "upload_max_filesize=50M" > /usr/local/etc/php/conf.d/upload-limit.ini \
-    && echo "post_max_size=50M" >> /usr/local/etc/php/conf.d/upload-limit.ini \
-    && echo "max_execution_time=60" > /usr/local/etc/php/conf.d/execution-time.ini
-
-# Configure OPcache for production
-RUN echo "opcache.enable=1" > /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.memory_consumption=256" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.interned_strings_buffer=16" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.revalidate_freq=0" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini
+# Copy configuration script and configure PHP
+COPY values-php /tmp/values-php
+COPY scripts/configure-php.sh /tmp/configure-php.sh
+RUN chmod +x /tmp/configure-php.sh && \
+    /tmp/configure-php.sh && \
+    rm /tmp/values-php /tmp/configure-php.sh
 
 # Create application directory
 WORKDIR /var/www
