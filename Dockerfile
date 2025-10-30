@@ -93,7 +93,7 @@ LABEL cloudflared.version="${CLOUDFLARED_VERSION}"
 
 # Install only runtime dependencies
 RUN apk add --no-cache \
-    # Image libraries (only if you use image processing) \
+    # Image libraries \
     libpng \
     libjpeg-turbo \
     freetype \
@@ -110,18 +110,15 @@ RUN apk add --no-cache \
     libxml2 \
     # Network \
     curl \
-    # Process management - using edge repo for latest version (4.3.0+) without pkg_resources warnings \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main supervisor \
-    # Composer dependencies (required for package:discover and other artisan commands) \
+    # Process management \
+    supervisor \
+    # Version control \
     git \
-    unzip \
-    bash \
     # Utilities \
-    ca-certificates \
-    && rm -rf /var/cache/apk/* \
-    && rm -rf /tmp/* \
-    && rm -rf /usr/local/lib/php/doc \
-    && rm -rf /usr/local/lib/php/test
+    unzip \
+    wget \
+    bash \
+    ca-certificates
 
 # Copy PHP extensions from builder
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
