@@ -91,7 +91,7 @@ LABEL swoole.version="${SWOOLE_VERSION}"
 LABEL composer.version="${COMPOSER_VERSION}"
 LABEL cloudflared.version="${CLOUDFLARED_VERSION}"
 
-# Install only runtime dependencies (ultra-minimal set for production)
+# Install only runtime dependencies
 RUN apk add --no-cache \
     # Image libraries (only if you use image processing) \
     libpng \
@@ -112,7 +112,11 @@ RUN apk add --no-cache \
     curl \
     # Process management - using edge repo for latest version (4.3.0+) without pkg_resources warnings \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main supervisor \
-    # Utilities (absolute minimum) \
+    # Composer dependencies (required for package:discover and other artisan commands) \
+    git \
+    unzip \
+    bash \
+    # Utilities \
     ca-certificates \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/* \
