@@ -110,8 +110,6 @@ RUN apk add --no-cache \
     libxml2 \
     # Network \
     curl \
-    # Process management \
-    supervisor \
     # Version control \
     git \
     # Utilities \
@@ -119,6 +117,9 @@ RUN apk add --no-cache \
     wget \
     bash \
     ca-certificates
+
+# Install supervisor from edge (separate to avoid bash dependency conflicts)
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main supervisor
 
 # Copy PHP extensions from builder
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
